@@ -71,7 +71,7 @@ export default function Home() {
     // 영문과 숫자만 입력 가능
     const invalid = uniqueInInput.filter((n) => !validPattern.test(n));
     if (invalid.length > 0) {
-      return alert(`영문 소문자와 숫자만 입력 가능합니다: ${invalid.join(', ')}`);
+      return alert(`영문 소문자와 숫자만 입력 가능합니다 : ${invalid.join(', ')}`);
     }
 
     // 현재 목록
@@ -113,7 +113,7 @@ export default function Home() {
     if (customCount >= 200) {
       return alert('200개를 초과하여 추가할 수 없습니다.');
     }
-    return alert('중복된 확장자이거나 이미 존재하는 항목입니다.');
+    return alert('이미 존재하는 확장자입니다.');
   }
 
     setLoading(true);
@@ -166,8 +166,9 @@ export default function Home() {
       }
 
       setNewExt('');
-    } catch (e: any) {
-      alert(e.message || '추가 중 오류가 발생했습니다.');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '추가 중 오류가 발생했습니다.';
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -182,7 +183,6 @@ export default function Home() {
   const fixed = extensions.filter((e) => e.type === 'fixed');
   const custom = extensions.filter((e) => e.type === 'custom');
 
-  const customText = custom.map((c) => c.name).join(' ');
   return (
     <main style={{ padding: 32, fontFamily: 'sans-serif' }}>
       <hr/><br/>

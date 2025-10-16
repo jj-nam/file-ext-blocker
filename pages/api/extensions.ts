@@ -128,8 +128,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
     return res.status(405).end(`Method ${method} Not Allowed`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
     console.error('API error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: message });
   }
 }
