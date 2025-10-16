@@ -106,6 +106,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type?: 'fixed' | 'custom';
       };
 
+      if (method === 'PUT' && (req.body as { bulk?: string })?.bulk === 'fixedToggleAll') {
+        const nextEnabled = Boolean((req.body as { enabled?: boolean }).enabled);
+        const { error } = await supabase
+          .from('extensions')
+          .update({ enabled: nextEnabled })
+          .eq('type', 'fixed');
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
+
       const updateData: Partial<ExtensionRow> & { name?: string } = {};
       if (typeof enabled !== 'undefined') updateData.enabled = enabled;
       if (typeof name !== 'undefined') updateData.name = String(name).trim().replace(/^\./, '').toLowerCase();
@@ -122,6 +132,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select();
       if (error) throw error;
       return res.status(200).json(data?.[0]);
+    }
+    
+    if (method === 'DELETE' && req.query.all === 'custom') {
+      const { error } = await supabase.from('extensions').delete().eq('type', 'custom');
+      if (error) throw error;
+      return res.status(204).end();
     }
 
     if (method === 'DELETE') {

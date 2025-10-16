@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 type Extension = {
   id: number;
@@ -13,6 +13,7 @@ export default function Home() {
   const [newExt, setNewExt] = useState('');
   const [loading, setLoading] = useState(false);
 
+  
   // 확장자 목록
   async function fetchExtensions() {
     const res = await fetch('/api/extensions');
@@ -180,8 +181,50 @@ export default function Home() {
     setExtensions((prev) => prev.filter((ext) => ext.id !== id));
   }
 
+  const bulkLoading = loading; // 필요시 별도 로딩 분리 가능
   const fixed = extensions.filter((e) => e.type === 'fixed');
-  const custom = extensions.filter((e) => e.type === 'custom');
+  const custom = extensions
+    .filter((e) => e.type === 'custom')
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+    // 전체선택 체크 상태 계산
+    const allFixedChecked = fixed.length > 0 && fixed.every((f) => f.enabled);
+
+    // 고정 확장자 전체 토글
+    async function toggleAllFixed(next: boolean) {
+      // 즉시 UI 반영
+      setExtensions((prev) =>
+        prev.map((e) => (e.type === 'fixed' ? { ...e, enabled: next } : e))
+      );
+
+      // 서버 일괄 업데이트
+      await fetch('/api/extensions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulk: 'fixedToggleAll', enabled: next }),
+      });
+    }
+
+    // 커스텀 확장자 전체 삭제
+    async function clearAllCustom() {
+      if (!confirm('모든 커스텀 확장자를 삭제할까요?')) return;
+
+      // 즉시 UI 반영
+      setExtensions((prev) => prev.filter((e) => e.type !== 'custom'));
+
+      // 서버 일괄 삭제
+      const res = await fetch('/api/extensions?all=custom', { method: 'DELETE' });
+      if (!res.ok) {
+        alert('삭제 중 오류가 발생했습니다.');
+        // 실패 시 다시 목록 동기화
+        fetchExtensions();
+      }
+    }
+
+    // 입력창만 초기화
+    function clearInput() {
+      setNewExt('');
+    }
 
   return (
     <main style={{ padding: 32, fontFamily: 'sans-serif' }}>
@@ -203,6 +246,7 @@ export default function Home() {
           <tr>
             <th style={{width: '120px', textAlign: 'left', padding: '10px', verticalAlign: 'top'}}>
               고정 확장자
+              <input type="checkbox" checked={allFixedChecked} onChange={(e) => toggleAllFixed(e.target.checked)} style={{ marginLeft: 8, verticalAlign: 'middle' }}/>
             </th>
             <td colSpan={14}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px 24px' }}>
@@ -240,6 +284,11 @@ export default function Home() {
                   >
                     + 추가
                 </button>
+                <button onClick={clearInput} style={{ padding: '6px 12px', backgroundColor: '#d32f2f', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#ef5350')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#d32f2f')}>
+                  초기화
+                </button>
               </div>
             </td>
           </tr>
@@ -254,7 +303,7 @@ export default function Home() {
                 </div>
 
                 {/* 추가된 커스텀 확장자 */}
-                <div style={{border: '1px solid #ccc', borderRadius: 6, height: 200, padding: 8, overflowY: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8}}>
+                <div style={{border: '1px solid #ccc', borderRadius: 6, height: 200, padding: 8, overflowY: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8, position: 'relative'}}>
                   {
                     custom.map((c) => (
                       <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #ccc', borderRadius: 12, padding: '4px 8px', lineHeight: 1}} title={c.name}>
@@ -265,6 +314,16 @@ export default function Home() {
                       </span>
                     ))
                   }
+                  {custom.length > 0 && (
+                    <button onClick={clearAllCustom} style={{ position: 'absolute', right: 8, bottom: 8, backgroundColor: '#d32f2f', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontSize: 14, display: 'flex',alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease'}}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#ef5350')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#d32f2f')} 
+                      title="모든 커스텀 확장자 삭제">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"  width="18" height="18" >
+                        <path d="M9 3v1H4v2h16V4h-5V3H9zm2 5v10h2V8h-2zm-4 0v10h2V8H7zm8 0v10h2V8h-2z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             </td>
