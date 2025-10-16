@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 type Extension = {
   id: number;
@@ -181,7 +181,6 @@ export default function Home() {
     setExtensions((prev) => prev.filter((ext) => ext.id !== id));
   }
 
-  const bulkLoading = loading; // 필요시 별도 로딩 분리 가능
   const fixed = extensions.filter((e) => e.type === 'fixed');
   const custom = extensions
     .filter((e) => e.type === 'custom')
