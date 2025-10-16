@@ -7,6 +7,13 @@ type RowIn = {
   enabled?: boolean;
 };
 
+type ExtensionRow = {
+  id: number;
+  name: string;
+  type: 'fixed' | 'custom';
+  enabled: boolean;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
@@ -70,9 +77,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const customCount = customs.length;
 
       // 중복 커스텀 제외
-      const dedupedCustoms = dedupByInput.filter(
+      const dedupedCustoms: Array<Pick<ExtensionRow, 'name' | 'type' | 'enabled'>> = dedupByInput.filter(
         (n) => n.type === 'custom' && !customNames.has(n.name)
-      );
+      ).map((n) => ({ name: n.name, type: 'custom', enabled: typeof n.enabled === 'boolean' ? n.enabled : true }));
 
       // 200개 제한 적용 (남은 슬롯만큼 자르기)
       const remain = Math.max(0, 200 - customCount);
@@ -99,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type?: 'fixed' | 'custom';
       };
 
-      const updateData: Record<string, any> = {};
+      const updateData: Partial<ExtensionRow> & { name?: string } = {};
       if (typeof enabled !== 'undefined') updateData.enabled = enabled;
       if (typeof name !== 'undefined') updateData.name = String(name).trim().replace(/^\./, '').toLowerCase();
       if (typeof type !== 'undefined') updateData.type = type;
